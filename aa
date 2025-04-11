@@ -1,0 +1,55 @@
+#!/bin/sh
+
+
+# set -x
+
+#
+# Sometimes when doing massive changes, the compile errors are long.  I want to start
+# fixing the first errors in case they are cascading into more errors later.  Turning
+# this variable to 1 will route the compiler output to a log file and then just post
+# the first 30 lines of that log.
+#
+USE_LOG=0
+
+if [ $USE_LOG -eq 1 ] ; then
+
+    rm -rf cmake
+    LOG='> /tmp/compile-full.log 2>&1'
+fi
+
+rm -f /tmp/compile-full.log
+
+#
+# This script actually does the compile and flashing
+#
+eval ./wio_wm1110 -bf $LOG
+rc=$?
+
+#
+# If error, then bail early
+#
+if [ $rc -ne 0 ] ; then
+    set-title ERROR
+
+    #
+    # if log file exists, show interesting portion.
+    #
+    if [ -r /tmp/compile-full.log ] ; then
+	grep -v Built /tmp/compile-full.log | \
+	    grep -v Found | \
+	    grep -v Consolidate | \
+	    grep -v Building | \
+	    grep -v Generating | \
+	    grep -v Linking > /tmp/compile.log
+
+	clear
+	head -30 /tmp/compile.log
+	wc /tmp/compile.log
+	fi
+    countdown 30
+   exit 1;
+fi
+
+set-title wio_wm1110 build complete
+date
+countdown 300000
