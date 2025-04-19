@@ -6,6 +6,11 @@ pushd ..
 export ZEPHYR_BASE=$PWD"/source/zephyr"
 popd
 
+ARM_OBJDUMP=$ZEPHYR_SDK_INSTALL_DIR/arm-zephyr-eabi/arm-zephyr-eabi/bin/objdump
+NRFJPROG="./nrf-command-line-tools/bin/nrfjprog"
+
+ZEPHYR=build/zephyr/zephyr.hex
+
 CONFIG_LOG=/tmp/config.log
 # LOG=--log=/tmp/nrfjprog.log
 
@@ -33,26 +38,29 @@ if [ $rc -ne 0 ] ; then
     exit 1
 fi
 
-arm-objdump -S -d build/zephyr/zephyr.elf > build/zephyr/zephyr.lst &
+$ARM_OBJDUMP -S -d build/zephyr/zephyr.elf > build/zephyr/zephyr.lst &
 
 #
 # Ready to flash code.
 #
 SENSOR="--snr 801049637"
 
-eval nrfjprog $SENSOR --recover --program build/zephyr/zephyr.hex --verify $LOG
+#
+# Need the 'eval' due to the quotes in the sensor value.
+#
+eval $NRFJPROG $SENSOR --recover --program $ZEPHYR --verify $LOG
 
 #
 # Start the Saleae logic analyzer and let it run in the backgound
 #
-saleae_run.py &
+#saleae_run.py &
 
-sleep 2
+#sleep 2
 
 #
 # Reset the board
 #
-eval nrfjprog $SENSOR --reset
+eval $NRFJPROG $SENSOR --reset
 
 set-title "Running..."
 
